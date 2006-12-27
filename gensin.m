@@ -1,7 +1,9 @@
 # Simple logic to generate a sine wave at 
 #   a given frequency, for a given duration, and a given db
-# HanishKVC, v21Dec2006_1408
+# v27Dec2006
+# HanishKVC, 20Dec2006
 #
+
 
 debug=1
 if(debug==0)
@@ -9,7 +11,7 @@ if(debug==0)
   samprate=44100
   ampsdB=[-67, -47, -27, -7, 0, 3, 6]
 else
-  freqs=[100,1000,10000]
+  freqs=[50,400,1000,8000]
   samprate=44100*1.0
   ampsdB=[-67, -7, 0, 6]
 endif
@@ -19,16 +21,22 @@ ampMax=10**0.6
 
 bits=16
 
-
-figure(1)
-multiplot(2,4)
+gset terminal jpeg size 800,800
 
 for a=1:columns(ampsdB)
-  printf(strcat("*** Working for ",int2str(ampsdB(a)),"dB ***\n"))
+
+  multiplot(0,0)
+  printf(strcat("\n*** Working for ",int2str(ampsdB(a)),"dB ***\n"))
+  fnamegen=strcat("gset output \"/tmp/plot_",int2str(ampsdB(a)),".jpg\"")
+  eval(fnamegen,"gset output test.jpg")
+  
   ampratio=10**(ampsdB(a)/10)/ampMax
   dataAll=0
-  figure(2)
-  multiplot(2,4)
+  if(debug==1)
+    multiplot(2,5)
+  else
+    multiplot(2,8)
+  endif
   for i=1:columns(freqs)
     printf(strcat("Generating freq",int2str(freqs(i)),"...\n"))
     data=ampratio*sin(2*pi*((1:samprate*duration)/samprate)*freqs(i))*(2**bits-1);
@@ -40,13 +48,12 @@ for a=1:columns(ampsdB)
     saveaudio(strcat("/tmp/data_",int2str(ampsdB(a)),"_",int2str(freqs(i))),data,"raw",bits)
     dataAll=dataAll+data;
   endfor
-  printf "Generating the freq response..."
-  figure(1)
+  printf "Generating the freq response...\n"
   mplot(dataAll(1:150))
   [ra,rf]=freqz(dataAll,1,[],samprate);
   mplot(rf,abs(ra))
   #title(strcat("Plots for ",int2str(ampsdB(a)),"dB"))
-  printf "Press any key to continue...\n"
-  pause
+  #printf "Press any key to continue...\n"
+  #pause
 endfor
 
