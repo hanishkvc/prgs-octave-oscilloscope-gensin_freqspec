@@ -12,10 +12,10 @@ if(debug==0)
   samplingrate=44100
   amplitudesDB=[-67, -47, -27, -7, 0, 3, 6]
 else
-  #frequencies=[50,400,1000,8000]
-  frequencies=[50, 100, 200, 400, 800, 1000, 2000, 4000, 8000, 10000, 12000, 14000, 16000, 18000, 20000]
+  frequencies=[50,400,1000,8000]
+  #frequencies=[50, 100, 200, 400, 800, 1000, 2000, 4000, 8000, 10000, 12000, 14000, 16000, 18000, 20000]
   samplingrate=44100*1.0
-  amplitudesDB=[-67, -7, 0, 3, 6]
+  amplitudesDB=[-7, 0, 3, 6]
 endif
 
 duration=20
@@ -163,6 +163,8 @@ endfunction
 
 function freq_spectrum_log_findabove(data,samplingrate,freqsubmult, min,max)
   [powers,freqs]=freq_spectrum_log(data,samplingrate,freqsubmult);
+  plot(freqs,powers);
+  pause
   powers=abs(powers);
   powers_c=clip(powers,[min,max]);
   powers_c=powers_c-min;
