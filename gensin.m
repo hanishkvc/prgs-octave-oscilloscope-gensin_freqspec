@@ -1,26 +1,23 @@
 # Simple logic to generate sine waves at 
 #   given frequencies, for a given duration, and a given set of dBs
 #   It also plots each wave and its freq spectrum
-# v12Jan2007
+# v17Jan2007
 # HanishKVC, 20Dec2006
 #
 
 global debug=1
 global reverify=1
-if(debug==0)
-  frequencies=[50,100,200,400,600,800,1000,2000,4000,8000,10000,12000,14000,16000,18000,20000]
-  samplingrate=44100
-  amplitudesDB=[-67, -47, -27, -7, 0, 3, 6]
-else
-  frequencies=[50,400,1000,8000]
-  #frequencies=[50, 100, 200, 400, 800, 1000, 2000, 4000, 8000, 10000, 12000, 14000, 16000, 18000, 20000]
-  samplingrate=44100*1.0
-  amplitudesDB=[-7, 0, 3, 6]
+if(debug==1)
+  #frequencies=[50,100,200,400,600,800,1000,2000,4000,8000,10000,12000,14000,16000,18000,20000]
+  #amplitudesDB=[-67, -47, -27, -7, 0, 3, 6]
+  global frequencies=[50,400,1000,8000]
+  global amplitudesDB=[-7, 0, 3, 6]
+  global samplingrate=44100*1.0
+  global duration=20
+  global amplitudeMax=10**0.6
+  global bitspersample=16
 endif
 
-duration=20
-amplitudeMax=10**0.6
-bitspersample=16
 
 function [hist,freq] = freq_spectrum(data, samplingrate,freqsubmult)
   if(nargin < 3)
@@ -56,7 +53,6 @@ function data = freq_gen_square(freq, samprate, duration, ampratio, bits)
 endfunction
 
 function samples_gen(freqs,samprate,duration,ampsdB,ampMax,bits)
-  global debug
   global reverify
 
   entries=columns(freqs)+1;
@@ -163,8 +159,6 @@ endfunction
 
 function freq_spectrum_log_findabove(data,samplingrate,freqsubmult, min,max)
   [powers,freqs]=freq_spectrum_log(data,samplingrate,freqsubmult);
-  plot(freqs,powers);
-  pause
   powers=abs(powers);
   powers_c=clip(powers,[min,max]);
   powers_c=powers_c-min;
@@ -183,13 +177,68 @@ function util_lecroydata_plot(datafile,samplingrate,freqsubmult,min,max)
   freq_spectrum_log_findabove(data,samplingrate,freqsubmult,min,max);
 endfunction
 
-function dummy_init
-  printf("Welcome to gensin.m v12Jan2007\n");
+function freqs=util_octave_scale(base,nextoctave,count)
+  for i = 0:count
+    freqs(i+1)=base*((2*nextoctave)**i);
+  endfor
 endfunction
 
-dummy_init
+function freqs=util_freqs_required
+  fs1=util_octave_scale(63,2,4);
+  fs2=util_octave_scale(100,2,4);
+  fs3=util_octave_scale(160,2,4);
+  freqs=sort([fs1,fs2,fs3]);
+endfunction
+
+function util_samples_gen
+  global samplingrate
+  global duration
+  global amplitudeMax
+  global bitspersample
+  samplingrate
+  duration
+  amplitudeMax
+  bitspersample
+  
+  printf("Press Any key to Generate samples for different dBs...\n");
+  pause
+  frequencies=[63,1000]
+  amplitudesDB=[-7, 0, 3, 6]
+  samples_gen(frequencies,samplingrate,duration,amplitudesDB,amplitudeMax,bitspersample);
+
+  printf("Press Any key to Generate samples for different frequencies...\n");
+  pause
+  # Based on Octaves of 31.5 (octave band spectrum)
+  frequencies=[31,63,125,250,500,1000,2000,4000,8000,16000]
+  # Based on 1/3-Octaves
+  #frequencies=[25,40,63,100,160,250,400,630,1000,1600,2500,4000,6300,10000,16000]
+  # Based on 2nd octaves of 63,100,160
+  #frequencies=[50,63,100,160,250,400,640,1000,1600,2500,4000,6300,10000,16000,25000]
+  amplitudesDB=[0, 3]
+  samples_gen(frequencies,samplingrate,duration,amplitudesDB,amplitudeMax,bitspersample);
+endfunction
+
+function dummy_init
+  printf("Welcome to gensin.m v17Jan2007\n");
+endfunction
+
+# ***********
+
+function modulate(data, data_sr, carrier_sr)
+  samples=carrier_sr/data_sr;
+  duration=length(data)/data_sr;
+  carrier=freq_gen(carrier_sr/8,carrier_sr,duration,1,16);
+  di=1;
+  on modulate(data, data_sr, carrier_sr)
+  i=1:length(carrier)
+  endfor
+endfunction
+
+# ***********
+
+dummy_init()
 #test_diffDBs()
-#samples_gen(frequencies,samplingrate,duration,amplitudesDB,amplitudeMax,bitspersample)
+#util_samples_gen()
 
 # misc
 #[r1,r2]=freqz(sA,1,[],44100);
