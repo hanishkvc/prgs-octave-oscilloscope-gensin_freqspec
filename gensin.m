@@ -1,7 +1,7 @@
 # Simple logic to generate sine waves at 
 #   given frequencies, for a given duration, and a given set of dBs
 #   It also plots each wave and its freq spectrum
-# v17Jan2007
+# v01Jan2017
 # HanishKVC, 20Dec2006
 #
 
@@ -55,23 +55,28 @@ endfunction
 function samples_gen(freqs,samprate,duration,ampsdB,ampMax,bits)
   global reverify
 
+  numOfAmpsdB = columns(ampsdB);
   entries=columns(freqs)+1;
-  evalstr=strcat("gset terminal jpeg size 1600,",int2str(200*entries))
-  eval(evalstr,"gset terminal jpeg size 1200,800")
+  hFigAll = figure()
+  set(hFigAll, 'Position', [ 10, 10, 1024, 200*numOfAmpsdB ])
+  sFigAllSetSize = strcat("-S1600,",int2str(200*numOfAmpsdB))
+  hFigCur = figure()
+  set(hFigCur, 'Position', [ 10, 10, 1600, 200*entries ])
+  sFigCurSetSize = strcat("-S1600,",int2str(200*entries))
+  #set(hFigCur, "visible", "off")
 
   for a=1:columns(ampsdB)
 
     fflush(stdout);
-    multiplot(0,0)
+    figure(hFigCur)
     printf(strcat("\n*** Working for ",int2str(ampsdB(a)),"dB ***\n"))
-    evalstr=strcat("gset output \"/tmp/plot_",int2str(ampsdB(a)),"dB.jpg\"")
-    eval(evalstr,"gset output /tmp/plot.jpg")
+    plotRs = entries
     if(reverify==1)
-      multiplot(4,entries)
+      plotCs = 4
     else
-      multiplot(2,entries)
+      plotCs = 2
     endif
-  
+
     ampratio=(10**(ampsdB(a)/10)/ampMax) # -0.01
     dataAll=0
     for i=1:columns(freqs)
@@ -79,56 +84,87 @@ function samples_gen(freqs,samprate,duration,ampsdB,ampMax,bits)
 
       data=ampratio*sin(2*pi*((1:samprate*duration)/samprate)*freqs(i))*((2**bits/2)-1);
       data=round(data);
-      mplot(data(1:150))
+      subplot(plotRs, plotCs, (i-1)*plotCs+1)
+      plot(data(1:150))
+      title(strcat("Freq:Data = ",int2str(freqs(i))))
       [ra,rf]=freq_spectrum(data,samprate);
-      mplot(rf,abs(ra))
+      subplot(plotRs, plotCs, (i-1)*plotCs+2)
+      plot(rf,abs(ra))
+      title("Spectrum")
     
       fname=strcat("/tmp/data_",int2str(ampsdB(a)),"dB_",int2str(freqs(i)));
       saveaudio(fname,data,"raw",bits)
       if(reverify==1)
         dataT=loadaudio(fname,"raw",bits);
         dataT=dataT';
-        mplot(dataT(1:150))
+        subplot(plotRs, plotCs, (i-1)*plotCs+3)
+        plot(dataT(1:150))
+        title("ReLoaded")
         [ra,rf]=freq_spectrum(dataT,samprate);
-        mplot(rf,abs(ra))
+        subplot(plotRs, plotCs, (i-1)*plotCs+4)
+        plot(rf,abs(ra))
+        title("DoVerify")
       endif
 
       dataAll=dataAll+data;
     endfor
 
+    subplot(plotRs, plotCs, i*plotCs+1)
+    plot(dataAll(1:150))
     printf "Generating the freq response...\n"
-    mplot(dataAll(1:150))
     [ra,rf]=freq_spectrum(dataAll,samprate);
-    mplot(rf,abs(ra))
+    subplot(plotRs, plotCs, i*plotCs+2)
+    plot(rf,abs(ra))
+    #evalstr=strcat("print hFigCur -dpdfcairo \"/tmp/plot_",int2str(ampsdB(a)),"dB.pdf\"")
+    #saveas(hFigCur,strcat("/tmp/plot_",int2str(ampsdB(a)),"dB.png"))
+    print(hFigCur,strcat("/tmp/plot_",int2str(ampsdB(a)),"dB.png"), sFigCurSetSize)
+
+    figure(hFigAll)
+    subplot(numOfAmpsdB, 2, (a-1)*2+1)
+    plot(dataAll(1:150))
+    title(strcat("Freqs: ",mat2str(freqs),", At dB=",int2str(ampsdB(a))))
+    subplot(numOfAmpsdB, 2, (a-1)*2+2)
+    plot(rf,abs(ra))
   endfor
-  multiplot(0,0)
+  #print(hFigAll, "/tmp/plotAll.jpg", '-djpg','-r300')
+  print(hFigAll, "/tmp/plotAll", '-dpng',sFigAllSetSize)
+
+  pause
+  close(hFigCur)
+  close(hFigAll)
 endfunction
 
 function test_diffDBs()
-  multiplot(2,4);
   
   d1=freq_gen(1000,44100,5,0.5,16);
-  mplot(d1(1:150))
+  subplot(4,2,1);
+  plot(d1(1:150))
   [rh,rf]=freq_spectrum(d1);
-  mplot(rf,rh);
+  subplot(4,2,2);
+  plot(rf,rh);
   
   d2=freq_gen(2000,44100,5,1,16);
-  mplot(d2(1:150))
+  subplot(4,2,3);
+  plot(d2(1:150))
   [rh,rf]=freq_spectrum(d2);
-  mplot(rf,rh);
+  subplot(4,2,4);
+  plot(rf,rh);
   
   d3=freq_gen(1000,44100,5,1,16);
-  mplot(d3(1:150))
+  subplot(4,2,5);
+  plot(d3(1:150))
   [rh,rf]=freq_spectrum(d3);
-  mplot(rf,rh);
+  subplot(4,2,6);
+  plot(rf,rh);
   
   d=d1+d2+d3;
-  mplot(d(1:150))
+  subplot(4,2,7);
+  plot(d(1:150))
   [rh,rf]=freq_spectrum(d);
-  mplot(rf,rh);
-  
+  subplot(4,2,8);
+  plot(rf,rh);
+  print("/tmp/test_diffDBs.png")
   pause
-  multiplot(0,0)
 endfunction
 
 function dB=dB_find(value,maxvalue,maxdb)
@@ -219,7 +255,9 @@ function util_samples_gen
 endfunction
 
 function dummy_init
-  printf("Welcome to gensin.m v17Jan2007\n");
+  printf("Welcome to gensin.m v01Jan2017\n");
+  printf("Switching from new pathetic qt/opengl based plot toolkit to gnuplot\n");
+  graphics_toolkit("gnuplot")
 endfunction
 
 # ***********
@@ -230,7 +268,7 @@ function modulate(data, data_sr, carrier_sr)
   carrier=freq_gen(carrier_sr/8,carrier_sr,duration,1,16);
   di=1;
   on modulate(data, data_sr, carrier_sr)
-  i=1:length(carrier)
+  for i=1:length(carrier)
   endfor
 endfunction
 
