@@ -35,6 +35,23 @@ if(debug==1)
   global bitspersample=16
 endif
 
+function [wavelenInMtrs] = wavelength_fromfreq(freq)
+  lightSpeedMtrsPerSec = 2.998e8
+  wavelenInMtrs = lightSpeedMtrsPerSec/freq
+endfunction
+
+function [dB] = dBm_attenuationrequired_for0dDm(power)
+  dB = 10*log10(power/1e-3)
+endfunction
+
+# freqBand, resolutionBandwidthInHz, minimumMeasurementTimeInSec
+# freqStepSize = resolutionBandwidth/2
+# A (9e3 to 150e3), 200, 10e-3
+# B (0.15e6 to 30e6), 9e3, 0.5e-3
+# C,D (30e6 to 1e9), 120e3, 0.06e-3
+function cispr16p2p3_scantime_forpeakdetection()
+  
+endfunction
 
 function [hist,freq] = freq_spectrum(data, samplingrate,freqsubmult)
   if(nargin < 3)
