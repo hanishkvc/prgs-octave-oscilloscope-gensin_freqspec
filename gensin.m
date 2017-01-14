@@ -1,8 +1,25 @@
-# Simple logic to generate sine waves at 
+# Simple logic to generate sine/square/... waves at
 #   given frequencies, for a given duration, and a given set of dBs
 #   It also plots each wave and its freq spectrum
-# v01Jan2017
+# v02Jan2017
 # HanishKVC, 20Dec2006
+#
+
+#
+# P = VI = V**2/R i.e V^2/R
+# For Power     10*log10(2/1)   ans =  3.0103 i.e  3 dB is double the power
+#               10*log10(0.5/1) ans = -3.0103 i.e -3 dB is half the power
+# For Amplitude 20*log10(2/1)   ans =  6.0206 i.e  6 dB is double the Voltage
+#
+# 10**(-3/10) ans =  0.50119 i.e -3dB (i.e drop) in power     means 50% of original
+# 10**(-6/20) ans =  0.50119 i.e -6dB (i.e drop) in amplitude means 50% of original
+# 10**(-3/20) ans =  0.70795 i.e -3dB (i.e drop) in amplitude means 70% of original
+#
+# 10**(3/10) ans =  1.9953
+# 10**(6/20) ans =  1.9953
+# 10**(3/20) ans =  1.4125
+# 0.7/0.5 ans =  1.4000
+#
 #
 
 global debug=1
@@ -211,6 +228,10 @@ function util_lecroydata_plot(datafile,samplingrate,freqsubmult,min,max)
   eval(evalstr,"printf \"Error loading data\n\"");
   data=dataT(1:length(dataT),2)';
   freq_spectrum_log_findabove(data,samplingrate,freqsubmult,min,max);
+endfunction
+
+function [data,dheader]=util_load_agilent_data(datafile)
+  [data,delim,dheader] = importdata(datafile, ",", 2)
 endfunction
 
 function freqs=util_octave_scale(base,nextoctave,count)
